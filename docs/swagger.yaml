@@ -1,0 +1,70 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a sample server.
+  title: My API Yoo
+  version: "1.0"
+paths:
+  /result/{taskID}:
+    get:
+      description: Get the result of a task by its ID if it's ready
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "202":
+          description: Task Not Ready
+          schema:
+            type: string
+        "404":
+          description: Task Not Found
+          schema:
+            type: string
+      summary: Get task result
+  /status/{taskID}:
+    get:
+      description: Get the current status of a task by its ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Task Not Found
+          schema:
+            type: string
+      summary: Get task status
+  /task:
+    post:
+      description: Create a new task and return the task ID
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a new task
+swagger: "2.0"
