@@ -4,36 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	httpSwagger "github.com/swaggo/http-swagger"
 	_ "image_redactor/docs"
+	"image_redactor/types"
 	"net/http"
 	"time"
 )
 
-type TaskStatus string
-
-const (
-	StatusInProgress TaskStatus = "in_progress"
-	StatusReady      TaskStatus = "ready"
-)
-
-type Task struct {
-	ID     string     `json:"id"`
-	Status TaskStatus `json:"status"`
-	Result string     `json:"result"`
-}
-
-type TaskStorage interface {
-	PostTask(task *Task)
-	GetTask(id string) (*Task, bool)
-}
-
 type Server struct {
-	storage TaskStorage
+	storage types.TaskStorage
 }
 
-func NewServer(storage TaskStorage) *Server {
+func NewServer(storage types.TaskStorage) *Server {
 	return &Server{storage: storage}
 }
 
@@ -57,11 +39,8 @@ func (s *Server) taskHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {string} string "Internal Server Error"
 // @Router /task [post]
 func (s *Server) createTaskHandler(w http.ResponseWriter, r *http.Request) {
-	taskID := uuid.New().String()
-	task := &Task{
-		ID:     taskID,
-		Status: StatusInProgress,
-	}
+	//taskID := uuid.New().String()
+	task := types.NewTask()
 
 	s.storage.PostTask(task)
 
@@ -69,13 +48,13 @@ func (s *Server) createTaskHandler(w http.ResponseWriter, r *http.Request) {
 	go func(taskID string) {
 		time.Sleep(5 * time.Second) // Имитация работы
 		task, _ := s.storage.GetTask(taskID)
-		task.Status = StatusReady
+		task.Status = types.StatusReady
 		task.Result = fmt.Sprintf("Processed image data for task %s", taskID)
-	}(taskID)
+	}(task.ID)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"task_id": taskID})
+	json.NewEncoder(w).Encode(map[string]string{"task_id": task.ID})
 }
 
 // @Summary Get task status
@@ -110,7 +89,7 @@ func (s *Server) getResultHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Task not found", http.StatusNotFound)
 		return
 	}
-	if task.Status != StatusReady {
+	if task.Status != types.StatusReady {
 		http.Error(w, "Task is not ready yet", http.StatusAccepted)
 		return
 	}
@@ -119,7 +98,7 @@ func (s *Server) getResultHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"result": task.Result})
 }
 
-func CreateAndRunServer(storage TaskStorage, addr string) error {
+func CreateAndRunServer(storage types.TaskStorage, addr string) error {
 	server := NewServer(storage)
 
 	r := chi.NewRouter()

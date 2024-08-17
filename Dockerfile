@@ -1,4 +1,3 @@
-# Этап сборки Go
 FROM golang:latest AS build
 
 WORKDIR /build
